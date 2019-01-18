@@ -102,8 +102,47 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
+
+          //Transform maps' coordinate to vehicle's coordinate
+          vector<double> Transform_dx;
+          vector<double> Transform_dy;
+          double dx, dy;
+          for(uint i = 0; i < ptsx.size(); i++){
+            dx = ptsx[i] - px; // shift x px = 0
+            dy = ptsy[i] - py; // shift y py = 0
+            Transform_dx.push_back(dx * cos(0 - psi) - dy * sin(0 - psi)); // psi = 0
+            Transform_dy.push_back(dx * sin(0 - psi) + dy * cos(0 - psi)); // psi = 0
+          }
+
+          double* ptrx = &Transform_dx[0];
+          double* ptry = &Transform_dy[0];
+
+          Eigen::Map<Eigen::VectorXd> Transform_ptsx(ptrx,6);
+          Eigen::Map<Eigen::VectorXd> Transform_ptsy(ptry,6);
+
+          //Polynomial Fitting
+          auto coeffs = polyfit(Transform_ptsx, Transform_ptsy, 3);
+
+          // cte = polyeval(coeffs, px) - py, px = 0, py = 0
+          double cte = polyeval(coeffs, 0);
+
+          // epsi = psi - atan(coeffs[1] + 2 * coeffs[2] * px + 3 * coeffs[3] * pow(px, 2))
+          // psi = 0, px = 0, py = 0
+          double epsi = -atan(coeffs[1]);
+
+          Eigen::VectorXd state(6);
+          state << 0, 0, 0, v, cte, epsi;
+
           double steer_value;
           double throttle_value;
+
+          auto vars = mpc.Solve(state, coeffs);
+
+          steer_value = ;
+          throttle_value = ;
+
+          
+
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
