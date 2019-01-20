@@ -69,6 +69,7 @@ class FG_eval {
     // Setup Constrains
 
     // Initial constrains
+    fg[1 + x_start] = vars[x_start];
     fg[1 + y_start] = vars[y_start];
     fg[1 + psi_start] = vars[psi_start];
     fg[1 + v_start] = vars[v_start];
@@ -97,7 +98,7 @@ class FG_eval {
       AD<double> a0 = vars[a_start + t - 1];
 
       AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * CppAD::pow(x0, 2) + coeffs[3] * CppAD::pow(x0, 3);
-      AD<double> psides0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0, 3 * coeffs[3] * CppAD::pow(x0, 2));
+      AD<double> psides0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * CppAD::pow(x0, 2));
 
       // Constrain functions
       fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
@@ -168,8 +169,8 @@ std::vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   }
 
   for(int i = a_start; i < n_vars; i++){
-    vars_lowerbound = -1.0;
-    vars_upperbound = 1.0;
+    vars_lowerbound[i] = -1.0;
+    vars_upperbound[i] = 1.0;
   }
 
   // Lower and upper limits for the constraints
@@ -246,5 +247,5 @@ std::vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   }
 
 
-  return {};
+  return result;
 }
