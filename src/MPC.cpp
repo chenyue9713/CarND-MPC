@@ -7,8 +7,8 @@ using CppAD::AD;
 using namespace std;
 
 // TODO: Set the timestep length and duration
-size_t N = 25;
-double dt = 0.05;
+size_t N = 10;
+double dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -51,7 +51,7 @@ class FG_eval {
     for(int t = 0; t < N; t++){
       fg[0] += CppAD::pow(vars[cte_start + t], 2);
       fg[0] += CppAD::pow(vars[epsi_start + t], 2);
-      fg[0] += CppAD::pow(vars[v_start + t], 2);
+      fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);
     }
 
     //Cost function minimizing errors for actuators
@@ -103,10 +103,10 @@ class FG_eval {
       // Constrain functions
       fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
       fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
-      fg[1 + psi_start + t] = psi1 - (psi0 + (v0 / Lf) * delta0 * dt);
+      fg[1 + psi_start + t] = psi1 - (psi0 - (v0 / Lf) * delta0 * dt);
       fg[1 + v_start + t] = v1 - (v0 + a0 * dt);
       fg[1 + cte_start + t] = cte1 - (f0 - y0 + v0 * CppAD::sin(epsi0) * dt);
-      fg[1 + epsi_start + t] = epsi1 - (psi0 - psides0 + (v0/Lf) * delta0 * dt);
+      fg[1 + epsi_start + t] = epsi1 - (psi0 - psides0 - (v0/Lf) * delta0 * dt);
 
 
     }
