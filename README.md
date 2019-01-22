@@ -11,6 +11,7 @@ The simulator is like following figure:
 ## The Kinematic Model
 For the project, we work on a relatively simple type of model, the Kinematic models, which ignore tire force, gravity, and mass. At the low and moderate speeds, kinematic models often approximate the actual vehicle dynamics. 
 For Kinematic model, in order to keep track with vihcle, the necessary state of vihcle include vihcle x's coordinate(x) and y's coordinate(y), orientation angle(psi) abd velocity(v). Then actutor control includes steering angle(delta) and acceleration(a). So the model combines the state and actuations from previous time step to calculate the current state and actutors based on the following update equations:
+
 ![png](images/eqns.png)
 
 ## Timestep length and Elapsed Duration(N & dt)
