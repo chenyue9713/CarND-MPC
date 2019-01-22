@@ -1,0 +1,3 @@
+/home/yue/learning/Udacity/carnd-term2/CarND-MPC/build/CMakeFiles/rebuild_cache.dir
+/home/yue/learning/Udacity/carnd-term2/CarND-MPC/build/CMakeFiles/mpc.dir
+/home/yue/learning/Udacity/carnd-term2/CarND-MPC/build/CMakeFiles/edit_cache.dir
