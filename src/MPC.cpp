@@ -22,9 +22,9 @@ double dt = 0.1;
 // This is the length from front to CoG that has a similar radius.
 const double Lf = 2.67;
 
-double ref_v = 40;
+double ref_v = 100;
 
-size_t x_start = 0;
+size_t x_start = 0 ;
 size_t y_start = x_start + N;
 size_t psi_start = y_start + N;
 size_t v_start = psi_start + N;
@@ -49,20 +49,20 @@ class FG_eval {
 
     //cost function based on reference state
     for(int t = 0; t < N; t++){
-      fg[0] += CppAD::pow(vars[cte_start + t], 2);
-      fg[0] += CppAD::pow(vars[epsi_start + t], 2);
+      fg[0] += 7000*CppAD::pow(vars[cte_start + t], 2);
+      fg[0] += 1000*CppAD::pow(vars[epsi_start + t], 2);
       fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);
     }
 
-    //Cost function minimizing errors for actuators
+    //Penalty for actuators
     for(int t = 0; t < N - 1; t++){
-      fg[0] += CppAD::pow(vars[delta_start + t], 2);
-      fg[0] += CppAD::pow(vars[a_start + t], 2);
+      fg[0] += 50*CppAD::pow(vars[delta_start + t], 2);
+      fg[0] += 200*CppAD::pow(vars[a_start + t], 2);
     }
 
-    //Cost function minimizing value gape between sequential actuations
+    //Cost function minimizing value gap between sequential actuations
     for(int t = 0; t < N - 2; t++){
-      fg[0] += CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
+      fg[0] += 50*CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
       fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
     } 
 
@@ -96,6 +96,10 @@ class FG_eval {
       // Only consider the acutation on time t
       AD<double> delta0 = vars[delta_start + t - 1];
       AD<double> a0 = vars[a_start + t - 1];
+      if(t > 1){
+        delta0 = vars[delta_start + t - 2];
+        a0 = vars[a_start + t -2];
+      }
 
       AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * CppAD::pow(x0, 2) + coeffs[3] * CppAD::pow(x0, 3);
       AD<double> psides0 = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * CppAD::pow(x0, 2));
@@ -164,8 +168,8 @@ std::vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   }
 
   for(int i = delta_start; i < a_start; i++){
-    vars_lowerbound[i] = -0.436332;
-    vars_upperbound[i] = 0.436332;
+    vars_lowerbound[i] = -0.436332*Lf;
+    vars_upperbound[i] = 0.436332*Lf;
   }
 
   for(int i = a_start; i < n_vars; i++){

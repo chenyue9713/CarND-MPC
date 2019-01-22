@@ -21,6 +21,8 @@ constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
+const double Lf = 2.67;
+
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
 // else the empty string "" will be returned.
@@ -104,21 +106,17 @@ int main() {
           */
 
           //Transform maps' coordinate to vehicle's coordinate
-          vector<double> Transform_dx;
-          vector<double> Transform_dy;
+
+          Eigen::VectorXd Transform_ptsx(ptsx.size());
+          Eigen::VectorXd Transform_ptsy(ptsy.size());
           double dx, dy;
+
           for(uint i = 0; i < ptsx.size(); i++){
             dx = ptsx[i] - px; // shift x px = 0
             dy = ptsy[i] - py; // shift y py = 0
-            Transform_dx.push_back(dx * cos(0 - psi) - dy * sin(0 - psi)); // psi = 0
-            Transform_dy.push_back(dx * sin(0 - psi) + dy * cos(0 - psi)); // psi = 0
+            Transform_ptsx[i] = dx * cos(- psi) - dy * sin(- psi); // psi = 0
+            Transform_ptsy[i] = dx * sin(- psi) + dy * cos(- psi); // psi = 0
           }
-
-          double* ptrx = &Transform_dx[0];
-          double* ptry = &Transform_dy[0];
-
-          Eigen::Map<Eigen::VectorXd> Transform_ptsx(ptrx,6);
-          Eigen::Map<Eigen::VectorXd> Transform_ptsy(ptry,6);
 
           //Polynomial Fitting
           auto coeffs = polyfit(Transform_ptsx, Transform_ptsy, 3);
@@ -130,15 +128,25 @@ int main() {
           // psi = 0, px = 0, py = 0
           double epsi = -atan(coeffs[1]);
 
+
+          //Compensate control latency
+          //Assume that v wouldn't change during 100 millisecond latency, so a = 0
+          double latency = 0.1;
+          double x = v * cos(0.0) * latency; // psi = 0
+          double y = v * sin(0.0) * latency; // psi = 0
+          double f0 = coeffs[0] + coeffs[1] * x + coeffs[2] * pow(x, 2) + coeffs[3] * pow(x, 3);
+          cte = f0 - y + v * sin(epsi) * latency;
+          epsi = 0.0 - atan(coeffs[1] + 2 * coeffs[2] * x + 3 * coeffs[3] * pow(x, 2)); // a = 0
+
           Eigen::VectorXd state(6);
-          state << 0, 0, 0, v, cte, epsi;
+          state << x, y, 0, v, cte, epsi;
 
           double steer_value;
           double throttle_value;
 
           auto vars = mpc.Solve(state, coeffs);
 
-          steer_value = vars[0]/deg2rad(25);
+          steer_value = vars[0]/(deg2rad(25)*Lf);
           throttle_value = vars[1];
 
           
@@ -175,7 +183,7 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
-          for(int i = 0; i < 100; i++){
+          for(int i = 0; i < 100; i+=3){
             next_x_vals.push_back(i);
             next_y_vals.push_back(polyeval(coeffs, i));
           }
