@@ -39,17 +39,20 @@ for(uint i = 0; i < ptsx.size(); i++){
 ```
 
 ## Model Prodictive Control with Latency
-There are two approaches to handle the 100ms latency in my code. For the first method, I assume that velocity(v) wouldn't during 100ms latency, in other word, acceleration(a) is zero. Therefore, we can calculate the new state for the duration of the latency, and make new state as the new initial state feeding into MPC. The way to implement it like following code:
+There are two approaches to handle the 100ms latency in my code. For the first method, I assume that acceleration(a), steering angle(delta) wouldn't change and keep the previous values during 100ms latency. Therefore, we can calculate the new state for the duration of the latency, and make new state as the new initial state feeding into MPC. The way to implement it like following code:
 ```cpp
-double latency = 0.1;
-          double x = v * cos(0.0) * latency; // psi = 0
-          double y = v * sin(0.0) * latency; // psi = 0
-          double f0 = coeffs[0] + coeffs[1] * x + coeffs[2] * pow(x, 2) + coeffs[3] * pow(x, 3);
-          cte = f0 - y + v * sin(epsi) * latency;
-          epsi = 0.0 - atan(coeffs[1] + 2 * coeffs[2] * x + 3 * coeffs[3] * pow(x, 2)); // a = 0
-
+          double latency = 0.1;
+          double x = v * cos(0.0) * latency; 
+          double y = v * sin(0.0) * latency; 
+          double new_psi = - (v/Lf) * prev_delta * latency;
+          double new_v = v + prev_a * latency;
+          double f0 = coeffs[0];
+          //double f0 = coeffs[0] + coeffs[1] * x + coeffs[2] * pow(x, 2) + coeffs[3] * pow(x, 3);
+          cte = f0 + v * sin(epsi) * latency;
+          //epsi = psi - atan(coeffs[1] + 2 * coeffs[2] * x + 3 * coeffs[3] * pow(x, 2)) - (v/Lf) * prev_delta * latency; 
+          epsi = 0 - atan(coeffs[1]) - (v/Lf) * prev_delta * latency;
           Eigen::VectorXd state(6);
-          state << x, y, 0, v, cte, epsi;
+          state << x, y, new_psi, new_v, cte, epsi;
 ```
 
 The other way is that the origin kinematic equations depend on the acuations from the previous timestep. However the duration of latency is equal to timestep, so the actuations are applied on another timestep later, liking following code:
