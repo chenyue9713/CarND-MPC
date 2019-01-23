@@ -23,6 +23,9 @@ double rad2deg(double x) { return x * 180 / pi(); }
 
 const double Lf = 2.67;
 
+double prev_a = 0.0;
+double prev_delta = 0.0;
+
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
 // else the empty string "" will be returned.
@@ -130,16 +133,19 @@ int main() {
 
 
           //Compensate control latency
-          //Assume that v wouldn't change during 100 millisecond latency, so a = 0
+          //Assume that a and delta wouldn't change during 100 millisecond latency
           double latency = 0.1;
-          double x = v * cos(0.0) * latency; // psi = 0
-          double y = v * sin(0.0) * latency; // psi = 0
-          double f0 = coeffs[0] + coeffs[1] * x + coeffs[2] * pow(x, 2) + coeffs[3] * pow(x, 3);
-          cte = f0 - y + v * sin(epsi) * latency;
-          epsi = 0.0 - atan(coeffs[1] + 2 * coeffs[2] * x + 3 * coeffs[3] * pow(x, 2)); // a = 0
-
+          double x = v * cos(0.0) * latency; 
+          double y = v * sin(0.0) * latency; 
+          double new_psi = - (v/Lf) * prev_delta * latency;
+          double new_v = v + prev_a * latency;
+          double f0 = coeffs[0];
+          //double f0 = coeffs[0] + coeffs[1] * x + coeffs[2] * pow(x, 2) + coeffs[3] * pow(x, 3);
+          cte = f0 + v * sin(epsi) * latency;
+          //epsi = psi - atan(coeffs[1] + 2 * coeffs[2] * x + 3 * coeffs[3] * pow(x, 2)) - (v/Lf) * prev_delta * latency; 
+          epsi = 0 - atan(coeffs[1]) - (v/Lf) * prev_delta * latency;
           Eigen::VectorXd state(6);
-          state << x, y, 0, v, cte, epsi;
+          state << x, y, new_psi, new_v, cte, epsi;
 
           double steer_value;
           double throttle_value;
@@ -149,7 +155,8 @@ int main() {
           steer_value = vars[0]/(deg2rad(25)*Lf);
           throttle_value = vars[1];
 
-          
+          prev_delta = vars[0];
+          prev_a = vars[1];
 
 
           json msgJson;
